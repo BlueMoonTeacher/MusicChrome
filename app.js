@@ -106,12 +106,13 @@
     reverbWet = ctx.createGain();
     reverbWet.gain.value = 0.24;
     masterOut = ctx.createGain();
-    masterOut.gain.value = 2;
+    /* 청취 환경 대비 출력 (이전 대비 믹스 진폭 약 4배) */
+    masterOut.gain.value = 8;
     compressor = ctx.createDynamicsCompressor();
     /* 길게 누른 뒤 다음 음이 눌리거나 씹히는 완화: 덜 세게·해제 조금 더 길게 */
-    compressor.threshold.value = -6;
-    compressor.knee.value = 18;
-    compressor.ratio.value = 2;
+    compressor.threshold.value = -14;
+    compressor.knee.value = 20;
+    compressor.ratio.value = 2.5;
     compressor.attack.value = 0.006;
     compressor.release.value = 0.42;
     masterMakeup = ctx.createGain();
