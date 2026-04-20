@@ -55,6 +55,15 @@ jobs:
           }
           echo "GOOGLE_APPLICATION_CREDENTIALS=$KEY_FILE" >> "$GITHUB_ENV"
 
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install and build (Vite → dist)
+        run: npm ci && npm run build
+
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
 
@@ -68,11 +77,11 @@ jobs:
             exit 1
           }
 
-      - name: Upload static assets
+      - name: Upload static site (dist/)
         run: |
           set -euo pipefail
-          gcloud storage cp index.html piano.html styles.css app.js \
-            "gs://${GCS_BUCKET}/" \
+          gcloud storage rsync --recursive \
+            dist/ "gs://${GCS_BUCKET}/" \
             --cache-control="public, max-age=300"
 
       - name: Print site URL

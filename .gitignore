@@ -17,3 +17,7 @@ credentials.json
 
 # Cursor / local
 .cursor/
+
+# Vite
+dist/
+node_modules/

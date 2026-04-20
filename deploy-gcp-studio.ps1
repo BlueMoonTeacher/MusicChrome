@@ -29,8 +29,12 @@ gcloud storage buckets update "gs://$Bucket" `
   --web-main-page-suffix=index.html `
   --web-error-page=index.html
 
-Write-Host "Uploading files..."
-gcloud storage cp index.html piano.html styles.css app.js "gs://$Bucket/"
+Write-Host "npm ci && npm run build..."
+npm ci
+npm run build
+
+Write-Host "Uploading dist/..."
+gcloud storage rsync --recursive dist/ "gs://$Bucket/" --cache-control="public, max-age=300"
 
 Write-Host "Public read (allUsers:objectViewer)..."
 gcloud storage buckets add-iam-policy-binding "gs://$Bucket" `

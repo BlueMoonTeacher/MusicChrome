@@ -4,7 +4,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>터치 피아노 · 2026 04 20 - 1334</title>
-  <link rel="stylesheet" href="styles.css?v=202604201334" />
   <meta http-equiv="Cache-Control" content="no-cache" />
   <meta http-equiv="Pragma" content="no-cache" />
 </head>
@@ -15,6 +14,14 @@
       <span id="sample-status" class="sample-status sample-status--pending" aria-live="polite"></span>
     </div>
     <div class="toolbar-right">
+      <label class="toolbar-mode">
+        <span class="toolbar-slider__label">음원</span>
+        <select id="engine-mode" class="toolbar-select" aria-label="음원 엔진">
+          <option value="legacy">기본 (Web Audio)</option>
+          <option value="tone">Tone·Salamander</option>
+          <option value="magenta">Magenta·SGM</option>
+        </select>
+      </label>
       <button type="button" id="octave-down" class="btn">옥타브 −</button>
       <button type="button" id="octave-up" class="btn">옥타브 +</button>
       <span id="range-label" class="range-label" aria-live="polite"></span>
@@ -40,6 +47,6 @@
     <div id="piano" class="piano" role="application" aria-label="피아노 건반"></div>
   </main>
 
-  <script src="app.js?v=202604201500"></script>
+  <script type="module" src="/src/main.js"></script>
 </body>
 </html>

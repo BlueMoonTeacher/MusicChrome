@@ -1,22 +1,17 @@
-(function () {
-  "use strict";
-
-  const NOTE_NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
-  const KO_SYLLABLE = ["도", "", "레", "", "미", "파", "", "솔", "", "라", "", "시"];
+import { BUILD_DISPLAY } from "../constants.js";
 
   const BASE_MIN = 24;
   const BASE_MAX = 84;
   /** 2·3·4옥타브 = 24·36·48반음 — 프리로드는 최대 폭 기준 */
   const MAX_RANGE_SEMITONES = 48;
-  let rangeSemitones = 24;
-
-  /** MusyngKite Acoustic Grand (FluidR3 계열, GPL) — gleitz/midi-js-soundfonts. 건반당 용량이 커 음질이 훨씬 낫습니다. */
-  const SAMPLE_PRIMARY_BASE =
-    "https://cdn.jsdelivr.net/gh/gleitz/midi-js-soundfonts@gh-pages/MusyngKite/acoustic_grand_piano-mp3/";
-  /** jsDelivr 차단 시 동일 파일(gh-pages 브랜치 raw). */
-  const SAMPLE_PRIMARY_MIRROR =
-    "https://raw.githubusercontent.com/gleitz/midi-js-soundfonts/gh-pages/MusyngKite/acoustic_grand_piano-mp3/";
-  /** 초저용량 백업(음질 낮음) — CC BY 3.0 Salamander */
+  const _useLocal = import.meta.env.VITE_LOCAL_SAMPLES === "1";
+  const _root = (import.meta.env.BASE_URL || "/").replace(/\/?$/, "/");
+  const SAMPLE_PRIMARY_BASE = _useLocal
+    ? `${_root}samples/musyng/`
+    : "https://cdn.jsdelivr.net/gh/gleitz/midi-js-soundfonts@gh-pages/MusyngKite/acoustic_grand_piano-mp3/";
+  const SAMPLE_PRIMARY_MIRROR = _useLocal
+    ? `${_root}samples/musyng/`
+    : "https://raw.githubusercontent.com/gleitz/midi-js-soundfonts/gh-pages/MusyngKite/acoustic_grand_piano-mp3/";
   const SAMPLE_FALLBACK_BASE =
     "https://unpkg.com/@audio-samples/piano-mp3-release@1.0.5/audio/";
   const SAMPLE_FALLBACK_MIRROR =
@@ -31,9 +26,6 @@
   function midiToSalamanderRelFile(midi) {
     return "rel" + (midi - 20) + ".mp3";
   }
-
-  let baseMidi = 48;
-  let showLabels = true;
 
   let audioCtx = null;
   const activeVoices = new Map();
@@ -57,8 +49,6 @@
     return audioCtx;
   }
 
-  /** 배포·캐시 확인용 (배포 시 시각 맞춰 수정) */
-  const BUILD_DISPLAY = "2026 04 20 - 1334";
 
   function setSampleStatus(msg, tier) {
     const el = document.getElementById("sample-status");
@@ -136,13 +126,15 @@
     }
   }
 
-  document.addEventListener("visibilitychange", function () {
-    if (!document.hidden) resumeAudio();
-  });
-  window.addEventListener("focus", resumeAudio);
-  window.addEventListener("pageshow", function (ev) {
-    if (ev.persisted) resumeAudio();
-  });
+  function initLegacyListeners() {
+    document.addEventListener("visibilitychange", function () {
+      if (!document.hidden) resumeAudio();
+    });
+    window.addEventListener("focus", resumeAudio);
+    window.addEventListener("pageshow", function (ev) {
+      if (ev.persisted) resumeAudio();
+    });
+  }
 
   function preloadSamples() {
     if (sampleState !== "idle") return Promise.resolve();
@@ -504,278 +496,20 @@
     }
   }
 
-  function formatMidiRange(low, high) {
-    return NOTE_NAMES[low % 12] + Math.floor(low / 12) + " – " + NOTE_NAMES[high % 12] + Math.floor(high / 12);
-  }
-
-  function updateRangeLabel() {
-    const el = document.getElementById("range-label");
-    const low = baseMidi;
-    const high = baseMidi + rangeSemitones - 1;
-    var oct = rangeSemitones / 12;
-    el.textContent = formatMidiRange(low, high) + " (" + oct + "옥타브)";
-  }
-
-  function setRangeModeSemitones(semi) {
-    if (semi !== 24 && semi !== 36 && semi !== 48) return;
-    rangeSemitones = semi;
-    var maxBase = getMaxBase();
-    if (baseMidi > maxBase) baseMidi = maxBase;
-    document.querySelectorAll(".btn--mode").forEach(function (b) {
-      var on = parseInt(b.getAttribute("data-octaves"), 10) * 12 === semi;
-      b.classList.toggle("is-active", on);
-      b.setAttribute("aria-pressed", on ? "true" : "false");
-    });
-    var main = document.getElementById("piano");
-    if (main) {
-      main.setAttribute("aria-label", String(octavesFromSemitones(semi)) + "옥타브 피아노 건반");
-    }
-    buildKeyboard();
-  }
-
-  function octavesFromSemitones(semi) {
-    return semi / 12;
-  }
-
-  function syllableForMidi(midi) {
-    return KO_SYLLABLE[midi % 12] || "";
-  }
-
-  function buildKeyboard() {
-    const piano = document.getElementById("piano");
-    piano.innerHTML = "";
-    piano.dataset.octaves = String(octavesFromSemitones(rangeSemitones));
-
-    const low = baseMidi;
-    const high = baseMidi + rangeSemitones - 1;
-    const notes = [];
-    for (let m = low; m <= high; m++) notes.push(m);
-
-    const whites = notes.filter(function (m) {
-      return !isBlackKey(m);
-    });
-    const blacks = notes.filter(isBlackKey);
-
-    const row = document.createElement("div");
-    row.className = "keys-white";
-    row.style.setProperty("--white-count", String(whites.length));
-
-    const nw = whites.length;
-    const oneWhitePct = 100 / nw;
-    const blackWpct = oneWhitePct * 0.52;
-
-    whites.forEach(function (midi) {
-      const key = document.createElement("button");
-      key.type = "button";
-      key.className = "key key-white";
-      key.dataset.midi = String(midi);
-      key.setAttribute("aria-label", NOTE_NAMES[midi % 12] + Math.floor(midi / 12));
-
-      const lab = document.createElement("span");
-      lab.className = "key-label" + (showLabels ? "" : " is-hidden");
-      lab.textContent = showLabels ? syllableForMidi(midi) : "";
-      key.appendChild(lab);
-
-      bindKeyPointer(key, midi);
-      row.appendChild(key);
-    });
-
-    blacks.forEach(function (midi) {
-      let wb = -1;
-      for (let i = 0; i < whites.length; i++) {
-        if (whites[i] < midi) wb = i;
-      }
-      const leftPct = (wb + 1) * oneWhitePct - blackWpct / 2;
-
-      const key = document.createElement("button");
-      key.type = "button";
-      key.className = "key key-black";
-      key.dataset.midi = String(midi);
-      key.style.left = leftPct + "%";
-      key.style.width = blackWpct + "%";
-      key.setAttribute("aria-label", NOTE_NAMES[midi % 12] + Math.floor(midi / 12));
-
-      const lab = document.createElement("span");
-      lab.className = "key-label" + (showLabels ? "" : " is-hidden");
-      lab.textContent = showLabels ? syllableForMidi(midi) : "";
-      key.appendChild(lab);
-
-      bindKeyPointer(key, midi);
-      row.appendChild(key);
-    });
-
-    piano.appendChild(row);
-    updateRangeLabel();
-  }
-
-  function bindKeyPointer(el, midi) {
-    var activePointerId = null;
-
-    el.addEventListener(
-      "pointerdown",
-      function (e) {
-        if (e.button !== 0 && e.pointerType === "mouse") return;
-        e.preventDefault();
-        resumeAudio();
-        ensureSamplesLoading();
-        activePointerId = e.pointerId;
-        try {
-          el.setPointerCapture(e.pointerId);
-        } catch (err) {}
-        el.classList.add("is-active");
-        noteOn(midi);
-      },
-      { passive: false }
-    );
-
-    function release(e) {
-      if (activePointerId === null || e.pointerId !== activePointerId) return;
-      try {
-        el.releasePointerCapture(activePointerId);
-      } catch (err) {}
-      activePointerId = null;
-      el.classList.remove("is-active");
-      noteOff(midi);
-      resumeAudio();
-    }
-
-    el.addEventListener("pointerup", release);
-    el.addEventListener("pointercancel", release);
-    el.addEventListener("lostpointercapture", function (e) {
-      if (activePointerId === null || e.pointerId !== activePointerId) return;
-      activePointerId = null;
-      el.classList.remove("is-active");
-      noteOff(midi);
-      resumeAudio();
-    });
-  }
-
-  function getMaxBase() {
-    return Math.max(BASE_MIN, BASE_MAX + 12 - rangeSemitones);
-  }
-
-  function setOctaveDelta(delta) {
-    let next = baseMidi + delta;
-    if (next < BASE_MIN) next = BASE_MIN;
-    var mb = getMaxBase();
-    if (next > mb) next = mb;
-    if (next === baseMidi) return;
-    baseMidi = next;
-    buildKeyboard();
-  }
-
-  function toggleLabels() {
-    showLabels = !showLabels;
-    const btn = document.getElementById("toggle-labels");
-    btn.setAttribute("aria-pressed", showLabels ? "true" : "false");
-    btn.textContent = showLabels ? "계이름 끄기" : "계이름 켜기";
-    document.querySelectorAll(".key-label").forEach(function (lab) {
-      lab.classList.toggle("is-hidden", !showLabels);
-      const key = lab.closest(".key");
-      if (!key) return;
-      const midi = parseInt(key.dataset.midi, 10);
-      if (showLabels) {
-        lab.textContent = syllableForMidi(midi);
-      }
-    });
-  }
-
-  function toggleFullscreen() {
-    const root = document.documentElement;
-    if (!document.fullscreenElement) {
-      try {
-        var p = root.requestFullscreen({ navigationUI: "hide" });
-        if (p !== undefined && p !== null && typeof p.then === "function") {
-          p.catch(function () {
-            root.requestFullscreen().catch(function () {});
-          });
-        }
-      } catch (err) {
-        root.requestFullscreen().catch(function () {});
-      }
-    } else {
-      document.exitFullscreen().catch(function () {});
+  function legacyStopAll() {
+    for (const midi of [...activeVoices.keys()]) {
+      hardStopVoice(midi);
     }
   }
 
-  document.addEventListener(
-    "contextmenu",
-    function (e) {
-      e.preventDefault();
-    },
-    true
-  );
-  document.addEventListener(
-    "auxclick",
-    function (e) {
-      if (e.button === 2) e.preventDefault();
-    },
-    true
-  );
-
-  function wireAudioSliders() {
-    var vol = document.getElementById("gain-slider");
-    var rev = document.getElementById("reverb-slider");
-    function onVol() {
-      ensureMasterBus();
-      syncVolumeFromUi();
-    }
-    function onRev() {
-      ensureMasterBus();
-      syncReverbFromUi();
-    }
-    if (vol) {
-      vol.addEventListener("input", onVol);
-      vol.addEventListener("change", onVol);
-    }
-    if (rev) {
-      rev.addEventListener("input", onRev);
-      rev.addEventListener("change", onRev);
-    }
-  }
-  wireAudioSliders();
-
-  var pianoHost = document.getElementById("piano");
-  if (pianoHost) {
-    pianoHost.addEventListener("dragstart", function (e) {
-      e.preventDefault();
-    });
-  }
-
-  document.getElementById("octave-down").addEventListener("click", function () {
-    setOctaveDelta(-12);
-  });
-  document.getElementById("octave-up").addEventListener("click", function () {
-    setOctaveDelta(12);
-  });
-  document.getElementById("toggle-labels").addEventListener("click", toggleLabels);
-  document.getElementById("fullscreen").addEventListener("click", toggleFullscreen);
-
-  document.querySelectorAll(".btn--mode").forEach(function (btn) {
-    btn.addEventListener("click", function () {
-      var oct = parseInt(btn.getAttribute("data-octaves"), 10);
-      if (oct >= 2 && oct <= 4) setRangeModeSemitones(oct * 12);
-    });
-  });
-
-  document.body.addEventListener(
-    "click",
-    function firstResume() {
-      resumeAudio();
-      ensureSamplesLoading();
-      document.body.removeEventListener("click", firstResume);
-    },
-    { once: true }
-  );
-
-  function startPreloadWhenDomReady() {
-    ensureSamplesLoading();
-  }
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", startPreloadWhenDomReady);
-  } else {
-    startPreloadWhenDomReady();
-  }
-
-  setRangeModeSemitones(24);
-})();
+  export {
+    noteOn as legacyNoteOn,
+    noteOff as legacyNoteOff,
+    resumeAudio as legacyResume,
+    ensureSamplesLoading,
+    ensureMasterBus,
+    syncVolumeFromUi,
+    syncReverbFromUi,
+    initLegacyListeners,
+    legacyStopAll,
+  };

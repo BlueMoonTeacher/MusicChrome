@@ -1,7 +1,13 @@
-# Cloud Run용 정적 피아노 (nginx, PORT=8080)
-FROM nginx:1.27-alpine
+# Cloud Run: Vite 빌드 산출물을 nginx로 서빙
+FROM node:20-alpine AS build
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm ci
+COPY . .
+RUN npm run build
 
+FROM nginx:1.27-alpine
 COPY nginx.conf /etc/nginx/conf.d/default.conf
-COPY index.html piano.html styles.css app.js /usr/share/nginx/html/
+COPY --from=build /app/dist/ /usr/share/nginx/html/
 
 EXPOSE 8080
