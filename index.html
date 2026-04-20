@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>터치 피아노 · 2026 04 14 - 1120</title>
+  <link rel="stylesheet" href="styles.css?v=202604141125" />
+  <meta http-equiv="Cache-Control" content="no-cache" />
+  <meta http-equiv="Pragma" content="no-cache" />
+</head>
+<body>
+  <header class="toolbar" aria-label="도구">
+    <div class="toolbar-left">
+      <span class="toolbar-build">빌드 2026 04 14 - 1120</span>
+      <span id="sample-status" class="sample-status sample-status--pending" aria-live="polite"></span>
+    </div>
+    <div class="toolbar-right">
+      <button type="button" id="octave-down" class="btn">옥타브 −</button>
+      <button type="button" id="octave-up" class="btn">옥타브 +</button>
+      <span id="range-label" class="range-label" aria-live="polite"></span>
+      <div class="range-mode-group" role="group" aria-label="건반 폭">
+        <button type="button" class="btn btn--mode is-active" data-octaves="2" aria-pressed="true">2옥</button>
+        <button type="button" class="btn btn--mode" data-octaves="3" aria-pressed="false">3옥</button>
+        <button type="button" class="btn btn--mode" data-octaves="4" aria-pressed="false">4옥</button>
+      </div>
+      <label class="toolbar-slider">
+        <span class="toolbar-slider__label">리버브</span>
+        <input type="range" id="reverb-slider" class="toolbar-slider__input" min="0" max="100" value="25" step="1" />
+      </label>
+      <label class="toolbar-slider">
+        <span class="toolbar-slider__label">볼륨</span>
+        <input type="range" id="gain-slider" class="toolbar-slider__input" min="0" max="300" value="200" step="5" />
+      </label>
+      <button type="button" id="toggle-labels" class="btn" aria-pressed="true">계이름 끄기</button>
+      <button type="button" id="fullscreen" class="btn">전체화면</button>
+    </div>
+  </header>
+
+  <main class="main">
+    <div id="piano" class="piano" role="application" aria-label="피아노 건반"></div>
+  </main>
+
+  <script src="app.js?v=202604141125"></script>
+</body>
+</html>

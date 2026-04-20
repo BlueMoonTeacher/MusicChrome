@@ -1,0 +1,49 @@
+# GCS 정적 호스팅 — main 브랜치 푸시 시 자동 업로드
+#
+# 필요한 GitHub Secrets (Repository → Settings → Secrets and variables → Actions):
+#   GCP_SA_KEY  — GCP 서비스 계정 JSON 전체 (한 줄로 붙여넣기)
+#
+# 서비스 계정 권한 예:
+#   역할: Storage Object Admin (역할: roles/storage.objectAdmin)
+#   대상: 버킷 studio-9601779496-musicchrome-piano
+#   (버킷 최초 생성은 로컬에서 deploy-gcp-studio.ps1 또는 콘솔에서 1회 수행)
+#
+name: Deploy to GCS
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  PROJECT_ID: studio-9601779496-ecc69
+  GCS_BUCKET: studio-9601779496-musicchrome-piano
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Upload static assets
+        run: |
+          gcloud config set project "$PROJECT_ID"
+          gcloud storage cp index.html piano.html styles.css app.js \
+            "gs://${GCS_BUCKET}/" \
+            --cache-control="public, max-age=300"
+
+      - name: Print site URL
+        run: |
+          echo "Site: https://storage.googleapis.com/${GCS_BUCKET}/index.html"

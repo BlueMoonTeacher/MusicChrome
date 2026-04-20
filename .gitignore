@@ -1,0 +1,19 @@
+# OS
+Thumbs.db
+Desktop.ini
+
+# Editor / IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Secrets (never commit service account JSON)
+*-sa.json
+gcp-key.json
+credentials.json
+.env
+.env.*
+
+# Cursor / local
+.cursor/

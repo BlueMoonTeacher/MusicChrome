@@ -1,0 +1,37 @@
+GCS 정적 웹 호스팅 (계획 1번) — 배포 절차 요약
+
+전제: gcloud CLI 설치 및 로그인(gcloud auth login), 결제가 활성화된 GCP 프로젝트.
+
+1) 버킷 생성 (이름은 전역 유일, 예: my-school-piano)
+   gsutil mb -l asia-northeast3 gs://YOUR_BUCKET_NAME
+
+2) 웹사이트로 설정 (메인 문서)
+   gsutil web set -m index.html -e index.html gs://YOUR_BUCKET_NAME
+
+3) 파일 업로드 (이 폴더에서)
+   gsutil cp index.html piano.html styles.css app.js gs://YOUR_BUCKET_NAME/
+
+4) 전체 읽기 공개 (정적 웹용)
+   gsutil iam ch allUsers:objectViewer gs://YOUR_BUCKET_NAME
+
+5) 접속 URL
+   http://storage.googleapis.com/YOUR_BUCKET_NAME/index.html
+   (또는 콘솔의 Cloud Storage > 버킷 > 웹사이트 구성에 표시된 엔드포인트)
+
+HTTPS가 필요하면 Load Balancer + 인증서 또는 Cloud CDN을 콘솔에서 추가로 구성합니다.
+학교망에서는 443(HTTPS)만 허용되는 경우가 많아, 최종 URL은 HTTPS로 제공하는 구성을 권장합니다.
+
+참고: https://cloud.google.com/storage/docs/hosting-static-website
+
+--- 이 프로젝트 실제 주소(피아노 전용) ---
+https://storage.googleapis.com/student-insight-bridge-musicchrome-piano/index.html
+https://storage.googleapis.com/student-insight-bridge-musicchrome-piano/piano.html
+(캐시 때문에 예전 화면이면 뒤에 ?t=1 처럼 아무 숫자나 붙여서 열기, 또는 piano.html 사용)
+
+※ insight-app-....run.app (백동초 Insight) 는 다른 서비스입니다.
+
+최신 배포 확인: 브라우저 탭 제목이 "터치 피아노 · 2026 04 14 - 0000" 형식이고,
+맨 위 도구줄 왼쪽 빌드 배지·녹색 상태줄 문구가 "2026 04 14 - 0000"과 일치하는지 보면 됩니다.
+(배포할 때마다 app.js의 BUILD_DISPLAY와 HTML 빌드 문구를 같은 시각으로 맞추세요.)
+(옥타브 버튼 아래 녹색 상태줄에도 동일 빌드 번호가 있습니다.)
+Chrome: F12 → Network → Disable cache 체크 후 새로고침.
