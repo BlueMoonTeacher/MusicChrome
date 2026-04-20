@@ -11,7 +11,8 @@ function midiToNoteName(midi) {
 
 function sliderToDb(linear) {
   if (linear <= 0.001) return -60;
-  return Math.max(-48, Math.min(12, 20 * Math.log10(linear * 0.5)));
+  /* Salamander 샘플 + 기본 게인에서 마스터가 높으면 디지털 클리핑(찢어짐) — 상한 +3dB */
+  return Math.max(-48, Math.min(3, 20 * Math.log10(linear * 0.42)));
 }
 
 /**
@@ -31,7 +32,7 @@ export async function createTonePianoEngine() {
 
     noteOn(midi) {
       const n = midiToNoteName(midi);
-      piano.keyDown(n, undefined, 0.82);
+      piano.keyDown(n, undefined, 0.62);
     },
 
     noteOff(midi) {
