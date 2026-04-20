@@ -58,7 +58,7 @@
   }
 
   /** 배포·캐시 확인용 (배포 시 시각 맞춰 수정) */
-  const BUILD_DISPLAY = "2026 04 14 - 1120";
+  const BUILD_DISPLAY = "2026 04 20 - 1334";
 
   function setSampleStatus(msg, tier) {
     const el = document.getElementById("sample-status");
@@ -106,7 +106,7 @@
     reverbWet = ctx.createGain();
     reverbWet.gain.value = 0.24;
     masterOut = ctx.createGain();
-    masterOut.gain.value = 1;
+    masterOut.gain.value = 2;
     compressor = ctx.createDynamicsCompressor();
     /* 길게 누른 뒤 다음 음이 눌리거나 씹히는 완화: 덜 세게·해제 조금 더 길게 */
     compressor.threshold.value = -6;
