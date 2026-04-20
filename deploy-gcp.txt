@@ -50,3 +50,14 @@ Chrome: F12 → Network → Disable cache 체크 후 새로고침.
    Secret: (위 Base64 붙여넣기)
 
 저장 후 Actions 탭에서 실패한 워크플로 → Re-run jobs.
+
+--- Cloud Run에서 GitHub 저장소 연결 (저장소 연결 버튼) ---
+GitHub Actions에 서비스 계정 키를 넣지 않고, 콘솔에서 GitHub와 GCP를 연결하는 방식입니다.
+(인증은 GCP↔GitHub 연동으로 처리되며, 이 레포에는 Dockerfile + nginx.conf 가 포함되어 있습니다.)
+
+1) Cloud Run → 웹 서비스 배포 → 저장소 연결
+2) GitHub 계정/저장소(BlueMoonTeacher/MusicChrome) 선택, 브랜치 main, 리전 asia-northeast3
+3) 빌드 방식: Dockerfile 사용(루트의 Dockerfile)
+4) 배포 후 서비스 URL은 *.run.app 형태 (HTTPS)
+
+참고: 순수 정적 파일만 있으면 GCS가 더 단순·저렉트할 수 있고, Cloud Run은 컨테이너가 항상 배포 가능한 형태여야 합니다.

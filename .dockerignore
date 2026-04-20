@@ -1,0 +1,5 @@
+.git
+.github
+*.md
+deploy-gcp*.txt
+deploy-gcp*.ps1
