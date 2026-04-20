@@ -1,12 +1,16 @@
 # GCS 정적 호스팅 — main 브랜치 푸시 시 자동 업로드
 #
-# 필요한 GitHub Secrets (Repository → Settings → Secrets and variables → Actions):
-#   GCP_SA_KEY  — GCP 서비스 계정 JSON 전체 (한 줄로 붙여넣기)
+# 필요한 GitHub Secret (Repository → Settings → Secrets and variables → Actions):
+#   GCP_SA_KEY_B64 — 서비스 계정 JSON 파일을 Base64로 인코딩한 문자열 (아래 생성 방법)
 #
-# 서비스 계정 권한 예:
-#   역할: Storage Object Admin (역할: roles/storage.objectAdmin)
-#   대상: 버킷 studio-9601779496-musicchrome-piano
-#   (버킷 최초 생성은 로컬에서 deploy-gcp-studio.ps1 또는 콘솔에서 1회 수행)
+# JSON을 GitHub에 직접 붙여넣으면 인코딩/따옴표/숨은 문자 때문에 파싱 오류가 나기 쉬워,
+# Base64 한 줄만 넣는 방식으로 둡니다.
+#
+# Base64 만들기 (PowerShell, JSON 파일과 같은 폴더에서):
+#   [Convert]::ToBase64String([IO.File]::ReadAllBytes(".\your-key.json"))
+# 출력 전체를 복사해 GCP_SA_KEY_B64 시크릿 값으로 저장합니다.
+#
+# 서비스 계정 권한: 버킷에 Storage Object Admin (roles/storage.objectAdmin)
 #
 name: Deploy to GCS
 
@@ -29,10 +33,18 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Authenticate to Google Cloud
-        uses: google-github-actions/auth@v2
-        with:
-          credentials_json: ${{ secrets.GCP_SA_KEY }}
+      - name: Decode service account key (Base64)
+        env:
+          GCP_SA_KEY_B64: ${{ secrets.GCP_SA_KEY_B64 }}
+        run: |
+          if [ -z "$GCP_SA_KEY_B64" ]; then
+            echo "Missing secret GCP_SA_KEY_B64. See workflow file header for PowerShell base64 steps."
+            exit 1
+          fi
+          printf '%s' "$GCP_SA_KEY_B64" | tr -d '\n\r ' | base64 -d > "${RUNNER_TEMP}/gcp-sa.json"
+          chmod 600 "${RUNNER_TEMP}/gcp-sa.json"
+          python3 -c "import json; json.load(open('${RUNNER_TEMP}/gcp-sa.json'))"
+          echo "GOOGLE_APPLICATION_CREDENTIALS=${RUNNER_TEMP}/gcp-sa.json" >> "$GITHUB_ENV"
 
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
