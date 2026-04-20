@@ -6,7 +6,9 @@ import { initPianoUi } from "./piano-ui.js";
 async function boot() {
   await Facade.initAudioFacade();
   initPianoUi();
-  Legacy.ensureSamplesLoading();
+  if (Facade.getMode() === "legacy") {
+    Legacy.ensureSamplesLoading();
+  }
 }
 
 if (document.readyState === "loading") {

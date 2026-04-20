@@ -1,4 +1,5 @@
 import { BUILD_DISPLAY } from "../constants.js";
+import { getEngineMode } from "../audio/engineModeState.js";
 
   const BASE_MIN = 24;
   const BASE_MAX = 84;
@@ -292,6 +293,7 @@ import { BUILD_DISPLAY } from "../constants.js";
   }
 
   function ensureSamplesLoading() {
+    if (getEngineMode() !== "legacy") return;
     if (sampleState === "idle") {
       preloadSamples();
     }

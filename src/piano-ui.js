@@ -140,7 +140,9 @@ function bindKeyPointer(el, midi) {
       if (e.button !== 0 && e.pointerType === "mouse") return;
       e.preventDefault();
       void Facade.resumeAll();
-      void Legacy.ensureSamplesLoading();
+      if (Facade.getMode() === "legacy") {
+        void Legacy.ensureSamplesLoading();
+      }
       activePointerId = e.pointerId;
       try {
         el.setPointerCapture(e.pointerId);
@@ -295,7 +297,9 @@ export function initPianoUi() {
     "click",
     function firstResume() {
       Legacy.legacyResume();
-      Legacy.ensureSamplesLoading();
+      if (Facade.getMode() === "legacy") {
+        Legacy.ensureSamplesLoading();
+      }
       document.body.removeEventListener("click", firstResume);
     },
     { once: true }
