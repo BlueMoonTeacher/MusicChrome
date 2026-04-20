@@ -1,5 +1,5 @@
 # Cloud Run: Vite 빌드 산출물을 nginx로 서빙
-FROM node:20-alpine AS build
+FROM node:22-alpine AS build
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci

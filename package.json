@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "터치 피아노 (Vite + 다중 오디오 엔진)",
   "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "dev": "vite",
     "build": "vite build",
