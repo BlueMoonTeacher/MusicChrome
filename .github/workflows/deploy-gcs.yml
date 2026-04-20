@@ -1,16 +1,9 @@
 # GCS 정적 호스팅 — main 브랜치 푸시 시 자동 업로드
 #
-# 필요한 GitHub Secret (Repository → Settings → Secrets and variables → Actions):
-#   GCP_SA_KEY_B64 — 서비스 계정 JSON 파일을 Base64로 인코딩한 문자열 (아래 생성 방법)
+# 필요한 GitHub Secret:
+#   GCP_SA_KEY_B64 — 서비스 계정 JSON을 Base64로 인코딩한 한 줄 (PowerShell 생성법은 파일 상단 주석)
 #
-# JSON을 GitHub에 직접 붙여넣으면 인코딩/따옴표/숨은 문자 때문에 파싱 오류가 나기 쉬워,
-# Base64 한 줄만 넣는 방식으로 둡니다.
-#
-# Base64 만들기 (PowerShell, JSON 파일과 같은 폴더에서):
-#   [Convert]::ToBase64String([IO.File]::ReadAllBytes(".\your-key.json"))
-# 출력 전체를 복사해 GCP_SA_KEY_B64 시크릿 값으로 저장합니다.
-#
-# 서비스 계정 권한: 버킷에 Storage Object Admin (roles/storage.objectAdmin)
+# 서비스 계정: 버킷에 Storage Object Admin (roles/storage.objectAdmin)
 #
 name: Deploy to GCS
 
@@ -31,27 +24,53 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Decode service account key (Base64)
         env:
           GCP_SA_KEY_B64: ${{ secrets.GCP_SA_KEY_B64 }}
         run: |
-          if [ -z "$GCP_SA_KEY_B64" ]; then
-            echo "Missing secret GCP_SA_KEY_B64. See workflow file header for PowerShell base64 steps."
+          set -euo pipefail
+          if [ -z "${GCP_SA_KEY_B64:-}" ]; then
+            echo "::error::GCP_SA_KEY_B64 시크릿이 없습니다."
+            echo "1) GitHub 저장소 → Settings → Secrets and variables → Actions"
+            echo "2) Repository secrets → New repository secret"
+            echo "3) Name: GCP_SA_KEY_B64 (철자·대소문자 동일)"
+            echo "4) Value: PowerShell로 만든 Base64 한 줄 전체 (deploy-gcp.txt GitHub Actions 절 참고)"
             exit 1
           fi
-          printf '%s' "$GCP_SA_KEY_B64" | tr -d '\n\r ' | base64 -d > "${RUNNER_TEMP}/gcp-sa.json"
-          chmod 600 "${RUNNER_TEMP}/gcp-sa.json"
-          python3 -c "import json; json.load(open('${RUNNER_TEMP}/gcp-sa.json'))"
-          echo "GOOGLE_APPLICATION_CREDENTIALS=${RUNNER_TEMP}/gcp-sa.json" >> "$GITHUB_ENV"
+          KEY_FILE="${RUNNER_TEMP}/gcp-sa.json"
+          printf '%s' "$GCP_SA_KEY_B64" | tr -d '\n\r ' | base64 -d > "$KEY_FILE" || {
+            echo "::error::Base64 디코드 실패. PowerShell로 만든 Base64 전체를 한 줄로 넣었는지 확인하세요."
+            exit 1
+          }
+          if [ ! -s "$KEY_FILE" ]; then
+            echo "::error::디코드 결과가 비어 있습니다. 시크릿이 잘리지 않았는지 확인하세요."
+            exit 1
+          fi
+          chmod 600 "$KEY_FILE"
+          python3 -c "import json; json.load(open('$KEY_FILE'))" || {
+            echo "::error::디코드된 내용이 올바른 JSON이 아닙니다. 원본 JSON 키 파일로 Base64를 다시 만드세요."
+            exit 1
+          }
+          echo "GOOGLE_APPLICATION_CREDENTIALS=$KEY_FILE" >> "$GITHUB_ENV"
 
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
 
+      - name: Activate service account & verify bucket
+        run: |
+          set -euo pipefail
+          gcloud auth activate-service-account --key-file="$GOOGLE_APPLICATION_CREDENTIALS"
+          gcloud config set project "$PROJECT_ID"
+          gcloud storage buckets describe "gs://${GCS_BUCKET}" --format='value(name)' || {
+            echo "::error::버킷 gs://${GCS_BUCKET} 을(를) 찾을 수 없습니다. GCP 콘솔에서 생성했거나 deploy-gcp-studio.ps1 로 1회 생성하세요."
+            exit 1
+          }
+
       - name: Upload static assets
         run: |
-          gcloud config set project "$PROJECT_ID"
+          set -euo pipefail
           gcloud storage cp index.html piano.html styles.css app.js \
             "gs://${GCS_BUCKET}/" \
             --cache-control="public, max-age=300"
